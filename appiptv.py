@@ -255,6 +255,8 @@ def dashboard():
         # -------- ALERTAS --------
     elif menu == "Alertas":
         st.subheader("🚨 Alertas")
+            if len(novedades) == 0:
+            st.info("No hay novedades disponibles")
 
         alertas = [n for n in news_list if n.get("titulo","")=="ALERTA"]
 
