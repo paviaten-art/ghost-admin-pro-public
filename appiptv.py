@@ -275,7 +275,7 @@ def dashboard():
             """, unsafe_allow_html=True)
         if is_admin:
             st.subheader("🚨 Crear Alerta")
-
+            
             contenido = st.text_area("Contenido de la alerta")
             caducidad = st.text_input("Fecha caducidad (YYYY-MM-DD HH:MM)")
 
@@ -289,9 +289,24 @@ def dashboard():
                     })
                     save_data(NEWS_FILE, news_list)
                     st.success("Alerta creada")
-                    st.rerun()
+                    st.rerun() 
+            st.subheader("🚨 Alertas actuales")
+            alertas = [n for n in news_list if n.get("titulo","") == "ALERTA"]
+            alertas = sorted(alertas, key=lambda x: x.get("fecha",""), reverse=True)
+            for i, n in enumerate(alertas):
+                cad = n.get("caducidad","")
+                cad_text = f"<br><small>Caduca: {cad}</small>" if cad else ""
+                
+                col1, col2 = st.columns([8,1])
+                with col1: 
+                    st.markdown(alertas[i].get("contenido",""), unsafe_allow_html=True)
+                with col2:
+                    if st.button("❌", key=f"del_alerta_{i}"):
+                        news_list.remove(alertas[i])
+                        save_data(NEWS_FILE, news_list)
+                        st.rerun()
 
-    # -------- USUARIOS ADMIN --------
+                # -------- USUARIOS ADMIN --------
     elif menu == "Usuarios Admin" and is_admin:
         for u in list(users.keys()):
             if u == "admin":
