@@ -110,7 +110,7 @@ button { background-color: #e50914; color: white; border-radius: 5px; }
 # LOGIN
 # ----------------------
 def login():
-    st.title("🔐 Acceso a Ghost Pro")
+    st.title("🔐 Acceso a Ghost PRO")
 
     tabs = st.tabs(["Login"])
 
