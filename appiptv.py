@@ -274,9 +274,6 @@ def dashboard():
                         news_list.remove(n)
                         save_data(NEWS_FILE, news_list)
                         st.rerun()
-        else: 
-            st.markdown("<div class='alert-card'><i>No hay alertas disponibles</i></div>", unsafe_allow_html=True)
-
             
             if is_admin:
                 nueva_alerta = st.text_input("Nueva alerta")
