@@ -255,36 +255,37 @@ def dashboard():
         # -------- ALERTAS --------
     elif menu == "Alertas":
         st.subheader("🚨 Alertas")
-        
-        alertas = [n for n in news_list if n.get("titulo","")=="ALERTA"]
 
-        for i, n in enumerate(alertas):
+        alertas = [n for n in news_list if n.get("titulo","") == "ALERTA" and not caducada(n.get("caducidad",""))]
+        alertas = sorted(alertas, key=lambda x: x.get("fecha",""), reverse=True)
+
+        if len(alertas) == 0:
+            st.info("No hay alertas activas")
+
+        for n in alertas:
             cad = n.get("caducidad","")
-            if caducada(cad):
-                continue
+            cad_text = f"<br><small>Caduca: {cad}</small>" if cad else ""
 
-            col1, col2 = st.columns([8,1])
+            st.markdown(f"""
+            <div class='alert-card'>
+            <b>{n.get('titulo','ALERTA')}</b><br>
+            <small>{n.get('fecha','')}</small>
+            {cad_text}
+            </div>
+            """, unsafe_allow_html=True)
+        if is_admin:
+            st.subheader("🚨 Crear Alerta")
 
-            with col1:
-                st.markdown(f"<div class='alert-card'>{n.get('contenido','')}</div>", unsafe_allow_html=True)
+            contenido = st.text_area("Contenido de la alerta")
+            caducidad = st.text_input("Fecha caducidad (YYYY-MM-DD HH:MM)")
 
-            with col2:
-                if is_admin:
-                    if st.button("❌", key=f"del_alert_{i}"):
-                        news_list.remove(n)
-                        save_data(NEWS_FILE, news_list)
-                        st.rerun()
-            
-            if is_admin:
-                nueva_alerta = st.text_input("Nueva alerta")
-
-            if st.button("Crear alerta"):
-                if nueva_alerta.strip():
+            if st.button("Crear Alerta"):
+                if contenido.strip():
                     news_list.append({
-                        "titulo":"ALERTA",
-                        "contenido": nueva_alerta,
+                        "titulo": "ALERTA",
+                        "contenido": contenido,
                         "fecha": str(datetime.now()),
-                        "caducidad": ""
+                        "caducidad": caducidad if is_valid_date(caducidad) else ""
                     })
                     save_data(NEWS_FILE, news_list)
                     st.success("Alerta creada")
