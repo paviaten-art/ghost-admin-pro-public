@@ -1,0 +1,21 @@
+{
+    "admin": {
+        "password": "admin123",
+        "role": "admin",
+        "listas": [
+            {
+                "url": "TomasRomero",
+                "caducidad": ""
+            }
+        ],
+        "caducidad": ""
+    },
+    "paco": {
+        "password": "paco123",
+        "caducidad": "2026-03-20 16:17"
+    },
+    "vicente": {
+        "password": "vicente123",
+        "caducidad": "2026-04-12 15:23"
+    }
+}
