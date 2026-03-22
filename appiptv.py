@@ -170,7 +170,8 @@ def dashboard():
             """, unsafe_allow_html=True)
 
             st.markdown("<br>", unsafe_allow_html=True)
-
+            st.image("lam.webp", width="stretch")
+    # -------- FORO --------
     # -------- FORO --------
     elif menu == "Foro":
         st.subheader("💬 Foro")
