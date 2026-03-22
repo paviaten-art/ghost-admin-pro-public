@@ -74,6 +74,7 @@ def clear_session():
     if os.path.exists(SESSION_FILE):
         os.remove(SESSION_FILE)
 
+
 # ----------------------
 # LOAD DATA
 # ----------------------
@@ -181,8 +182,9 @@ def dashboard():
                 news_list.append({
                     "titulo": f"Post de {st.session_state.user}",
                     "contenido": mensaje,
-                    "fecha": str(datetime.now()),
-                    "caducidad": ""
+                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "caducidad": "",
+                    "forista": st.session_state.user
                 })
                 save_data(NEWS_FILE, news_list)
                 st.success("Publicado")
@@ -216,7 +218,7 @@ def dashboard():
                 news_list.append({
                     "titulo": titulo,
                     "contenido": contenido,
-                    "fecha": str(datetime.now()),
+                    "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
                     "caducidad": caducidad if is_valid_date(caducidad) else ""
                 })
                 save_data(NEWS_FILE, news_list)
@@ -237,17 +239,11 @@ def dashboard():
             col1, col2 = st.columns([8,1])
 
             with col1:
-                st.markdown(f"""
-                <div class='card'>
-                <b>{n.get('titulo','Sin título')}</b><br>
-                <small>{n.get('fecha','')}</small>
-                {cad_text}<br>
-                {n.get('contenido','')}
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<div class='card'><b>{n.get('titulo','Sin título')}</b><br>{n.get('contenido','')}{cad_text}</div>", unsafe_allow_html=True)
+                
 
             with col2:
-                if st.button("❌", key=f"del_novedad_{i}"):
+                if st.button("Eliminar❌", key=f"del_novedad_{i}"):
                     news_list.remove(n)
                     save_data(NEWS_FILE, news_list)
                     st.rerun()
@@ -267,12 +263,21 @@ def dashboard():
             cad_text = f"<br><small>Caduca: {cad}</small>" if cad else ""
 
             st.markdown(f"""
-            <div class='alert-card'>
-            <b>{n.get('titulo','ALERTA')}</b><br>
-            <small>{n.get('fecha','')}</small>
-            {cad_text}
-            </div>
-            """, unsafe_allow_html=True)
+        <div class='alert-card'>
+        <b>🚨 ALERTA</b>
+        <br>
+        <small>{n.get('fecha','')}</small>
+
+        <br><br>
+
+        <div style='margin-top:5px;'>
+        {n.get("contenido","")}
+        </div>
+
+        {cad_text}
+        </div>
+        """, unsafe_allow_html=True)
+        
         if is_admin:
             st.subheader("🚨 Crear Alerta")
             
@@ -284,67 +289,98 @@ def dashboard():
                     news_list.append({
                         "titulo": "ALERTA",
                         "contenido": contenido,
-                        "fecha": str(datetime.now()),
+                        "fecha": datetime.now().strftime("%Y-%m-%d %H:%M"),
                         "caducidad": caducidad if is_valid_date(caducidad) else ""
                     })
                     save_data(NEWS_FILE, news_list)
                     st.success("Alerta creada")
                     st.rerun() 
-            st.subheader("🚨 Alertas actuales")
-            alertas = [n for n in news_list if n.get("titulo","") == "ALERTA"]
-            alertas = sorted(alertas, key=lambda x: x.get("fecha",""), reverse=True)
-            for i, n in enumerate(alertas):
-                cad = n.get("caducidad","")
-                cad_text = f"<br><small>Caduca: {cad}</small>" if cad else ""
+            if is_admin:
+                st.subheader("🚨 Alertas actuales")
+            
+            for i, n in enumerate(news_list):
+                if n.get("titulo","") != "ALERTA" or caducada(n.get("caducidad","")):
+                    continue
                 
-                col1, col2 = st.columns([8,1])
+                cad = n.get("caducidad","")
+                
+                col1, col2, col3 = st.columns([8,1,1])
                 with col1: 
                     st.markdown(alertas[i].get("contenido",""), unsafe_allow_html=True)
                 with col2:
-                    if st.button("❌", key=f"del_alerta_{i}"):
-                        news_list.remove(alertas[i])
+                    if st.button("Eliminar❌", key=f"del_alerta_{i}"):
+                        del news_list[i]
                         save_data(NEWS_FILE, news_list)
+                        st.success("Alerta eliminada")
                         st.rerun()
+                
+                        
+                with col3: # EDITAR SOLO CONTENIDO, NO CADUCIDAD
+                    if st.button("Editar✏️", key=f"edit_alerta_{i}"): 
+                        st.session_state.editing_alerta = i
+                        st.session_state.editing_alerta_content = n.get("contenido","")
+                        st.rerun()
+                
+                # Formulario de edición
+                if st.session_state.get("editing_alerta") == i:
+                    new_content = st.text_area("Nuevo contenido", value=st.session_state.get("editing_alerta_content",""), key=f"edit_content_{i}")
+                    if st.button("Guardar", key=f"save_alerta_{i}"):
+                        news_list[i]["contenido"] = new_content
+                        save_data(NEWS_FILE, news_list)
+                        st.success("Alerta actualizada")
+                        st.session_state.editing_alerta = None
+                        st.session_state.editing_alerta_content = ""
+                        st.rerun()
+        
+        
 
-                # -------- USUARIOS ADMIN --------
+                        # -------- USUARIOS ADMIN --------
     elif menu == "Usuarios Admin" and is_admin:
         for u in list(users.keys()):
             if u == "admin":
                 st.write("admin (admin)")
                 continue
 
-            col1, col2 = st.columns([8,1])
+            col1, col2, col3 = st.columns([6,1,1])
 
+        
             with col1:
-                cad = users[u].get("caducidad","")
-                dias, minutos = tiempo_restante(cad)
-
-                if dias is not None:
-                    st.write(f"{u} → {dias} días restantes")
-                else:
-                    st.write(f"{u} → sin caducidad")
-
+                st.write(f"{u} ({users[u].get('caducidad','Sin caducidad')})")
             with col2:
-                if st.button("❌", key=u):
+                if st.button("Editar✏️", key=f"edit_{u}"):
+                    new_cad = st.text_input(f"Caducidad para {u} (YYYY-MM-DD HH:MM)", key=f"cad_{u}")
+                    if st.button("Guardar", key=f"save_{u}"):
+                        if new_cad.strip() == "" or is_valid_date(new_cad):
+                            users[u]["caducidad"] = new_cad.strip()
+                            save_data(USERS_FILE, users)
+                            st.success("Usuario actualizado")
+                            st.rerun()
+                        else:
+                            st.error("Fecha no válida")
+            with col3:
+                if st.button("Eliminar❌", key=f"del_{u}"):
                     del users[u]
                     save_data(USERS_FILE, users)
+                    st.success("Usuario eliminado")
                     st.rerun()
-
-        st.subheader("Crear usuario")
-
-        new_user = st.text_input("Usuario")
-        new_pwd = st.text_input("Contraseña", type="password")
-        cad = st.text_input("Caducidad (YYYY-MM-DD HH:MM)")
-
+        st.subheader("Crear nuevo usuario")
+        new_user = st.text_input("Nombre de usuario", key="new_user")
+        new_pass = st.text_input("Contraseña", type="password", key="new_pass")
+        new_cad = st.text_input("Caducidad (YYYY-MM-DD HH:MM)", key="new_cad")
         if st.button("Crear"):
-            if new_user and new_user not in users:
-                users[new_user] = {
-                    "password": new_pwd,
-                    "caducidad": cad if is_valid_date(cad) else ""
-                }
-                save_data(USERS_FILE, users)
-                st.success("Usuario creado")
-                st.rerun()
+            if new_user.strip() and new_pass.strip():
+                if new_user in users:
+                    st.error("El usuario ya existe")
+                else:
+                    users[new_user] = {
+                        "password": new_pass.strip(),
+                        "caducidad": new_cad.strip() if is_valid_date(new_cad) else ""
+                    }
+                    save_data(USERS_FILE, users)
+                    st.success("Usuario creado")
+                    st.rerun()
+            else:
+                st.error("Usuario y contraseña son obligatorios")
 
     # -------- MI CUENTA --------
     elif menu == "Mi Cuenta" and not is_admin:
